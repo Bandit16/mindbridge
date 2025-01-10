@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+/keys/firebase_key.json
 # Distribution / packaging
 .Python
 build/
