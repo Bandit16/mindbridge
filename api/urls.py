@@ -6,4 +6,5 @@ urlpatterns = [
     path('api/game-images/<str:letter>/',GameImagesAPI.as_view(),name='game-images') ,
     path('test-firebase/', test_firebase, name='test-firebase'),
     path('sync-users/', SyncFirebaseUsers.as_view(), name='sync-users'),
+    path('api/recognize-voice/', VoiceRecognitionAPIView.as_view(), name='recognize-voice'),
 ]

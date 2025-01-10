@@ -9,6 +9,12 @@ from .models import User , TestProgress
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+import speech_recognition as sr
+import os
 
 
 class AlphabetImagesAPI(GenericAPIView):
@@ -133,3 +139,35 @@ class SaveProgress(APIView):
             return Response({"error": "User not found."}, status=404)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+
+class VoiceRecognitionAPIView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request):
+        audio_file = request.FILES.get('audio')
+        if not audio_file:
+            return Response({"error": "No audio file provided"}, status=400)
+
+        # Save the audio file temporarily
+        temp_file_path = "temp_audio.wav"
+        with open(temp_file_path, "wb") as f:
+            for chunk in audio_file.chunks():
+                f.write(chunk)
+
+        # Recognize voice
+        recognizer = sr.Recognizer()
+        try:
+            with sr.AudioFile(temp_file_path) as source:
+                audio = recognizer.record(source)
+                text = recognizer.recognize_google(audio, language='en-US', show_all=False)
+                os.remove(temp_file_path)  # Clean up temp file
+                return Response({"text": text}, status=200)
+        except sr.UnknownValueError:
+            return Response({"error": "Could not understand audio"}, status=400)
+        except sr.RequestError:
+            return Response({"error": "Speech Recognition service error"}, status=500)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+        
