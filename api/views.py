@@ -34,16 +34,17 @@ class AlphabetImagesAPI(GenericAPIView):
 class GameImagesAPI(GenericAPIView):
     queryset = GameImage.objects.all()
     lookup_field = "letter"
-    def get(self , request , letter):
-        images = GameImage.objects.filter(letter__letter = letter.lower())
+
+    def get(self, request, letter):
+        images = GameImage.objects.filter(letter__letter=letter.lower())
         if not images.exists():
             return Response({"error": "No images found for the requested letter"}, status=404)
 
         response_data = [
             {
-                "image_url": request.build_absolute_uri(images.image.url),
+                "image_url": request.build_absolute_uri(image.image.url),
             }
-            
+            for image in images
         ]
 
         return Response({"status": "success", "data": response_data})
