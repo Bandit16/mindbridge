@@ -47,7 +47,6 @@ class AlphabetImagesAPI(GenericAPIView):
         }
 
         return Response({"status": "success", "data": response_data})
-
 class GameImagesAPI(GenericAPIView):
     permission_classes = [AllowAny]
 
@@ -70,13 +69,14 @@ class GameImagesAPI(GenericAPIView):
                 {
                     "image_url": request.build_absolute_uri(image.image.url),
                     "description": image.description,
+                    "additional_image_1_url": request.build_absolute_uri(image.additional_image_1.url) if image.additional_image_1 else None,
+                    "additional_image_2_url": request.build_absolute_uri(image.additional_image_2.url) if image.additional_image_2 else None,
                 }
                 for image in images
             ]
         }
 
         return Response({"status": "success", "data": response_data})
-    
 
 
 
@@ -123,14 +123,14 @@ class SaveProgress(APIView):
     def post(self, request):
         try:
             firebase_uid = request.data.get('firebase_uid')
-            test_name = request.data.get('test_name')
+            test_id = request.data.get('test_id')
             score = request.data.get('score')
             time_spent = request.data.get('time_spent')  # e.g., '00:10:30'
 
             user = User.objects.get(firebase_uid=firebase_uid)
             TestProgress.objects.create(
                 user=user,
-                test_name=test_name,
+                test_id=test_id,
                 score=score,
                 time_spent=time_spent,
             )
@@ -171,3 +171,61 @@ class VoiceRecognitionAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
         
+
+
+class SyncProgressData(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            db = firestore.client()
+            progress_docs = db.collection('progress').stream()
+
+            created_count = 0
+            for doc in progress_docs:
+                data = doc.to_dict()
+                firebase_uid = data.get('firebase_uid')
+                test_id = data.get('testid')
+                score = data.get('score')
+                time_spent = data.get('timespent')  
+
+                # Fetch corresponding user
+                try:
+                    user = User.objects.get(firebase_uid=firebase_uid)
+                except User.DoesNotExist:
+                    print("user doesnt exists")
+                    continue 
+
+                # Create ProgressReport entry
+                TestProgress.objects.create(
+                    user=user,
+                    test_id=test_id,
+                    score=score,
+                    time_spent=time_spent,
+                )
+                created_count += 1
+
+            return Response({
+                "message": f"Progress data synced successfully. {created_count} records created."
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+        
+class ProgressDataApi(APIView):
+    permission_classes = [AllowAny]
+    queryset = TestProgress.objects.all()
+
+    def get(self, request , uuid):
+        try:
+            
+            progress_data = TestProgress.objects.get(user__firebase_uid=uuid)
+            response_data = {
+                "user": progress_data.user.name,
+                "test_id": progress_data.test_id,
+                "score": progress_data.score,
+                "time_spent": progress_data.time_spent,
+                "created_at": progress_data.created_at,
+            }
+            return JsonResponse({"data": response_data})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)

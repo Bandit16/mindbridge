@@ -7,4 +7,6 @@ urlpatterns = [
     path('test-firebase/', test_firebase, name='test-firebase'),
     path('sync-users/', SyncFirebaseUsers.as_view(), name='sync-users'),
     path('api/recognize-voice/', VoiceRecognitionAPIView.as_view(), name='recognize-voice'),
+    path('sync-progress/', SyncProgressData.as_view(), name='save-progress'),
+    path('api/progress/<str:uuid>', ProgressDataApi.as_view(), name='progress'),
 ]

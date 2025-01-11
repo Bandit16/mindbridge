@@ -28,7 +28,8 @@ class GameImage(models.Model):
     letter = models.ForeignKey(Letter , on_delete=models.CASCADE)
     description = models.TextField(max_length=100, blank=True, null=True, default='This is and alphabet')
     image = models.ImageField(upload_to='game_images/')
-
+    additional_image_1 = models.ImageField(upload_to='game_images/', blank=True, null=True)
+    additional_image_2 = models.ImageField(upload_to='game_images/', blank=True, null=True)
     def __str__(self):
         return self.letter.letter
     
